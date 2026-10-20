@@ -1,10 +1,32 @@
+# the grammer for Sprout 
+"""Sprout  a tiny garden-themed language and compiler (lexer -> parser -> semantics -> TAC).
+Usage: python sprout.py [file.spr]      (no file = run the built-in demo)
 
+Grammar (context-free, EBNF):
+    program  -> stmt*
+    stmt     -> 'plant' ID ':' type '=' expr ';'
+              | 'say' expr ';'
+              | 'if' expr block ('else' block)?
+              | 'grow' expr block
+              | ID '=' expr ';'
+    block    -> '{' stmt* '}'
+    type     -> 'int' | 'bool'
+    expr     -> or_expr
+    or_expr  -> and_expr ('or' and_expr)*
+    and_expr -> eq_expr ('and' eq_expr)*
+    eq_expr  -> rel_expr (('==' | '!=') rel_expr)*
+    rel_expr -> add_expr (('<' | '>' | '<=' | '>=') add_expr)*
+    add_expr -> mul_expr (('+' | '-') mul_expr)*
+    mul_expr -> unary (('*' | '/' | '%') unary)*
+    unary    -> ('not' | '-') unary | primary
+    primary  -> NUM | 'true' | 'false' | ID | '(' expr ')'
+"""
 import re, sys, operator
 
 class SproutError(Exception):
     pass
 
-# ---------- Phase 1: Lexer ----------
+# Phase 1: Lexer
 KEYWORDS = {'plant', 'say', 'if', 'else', 'grow', 'true', 'false',
             'int', 'bool', 'and', 'or', 'not'}
 SPEC = [('NUM', r'\d+'), ('ID', r'[A-Za-z_]\w*'),
@@ -27,7 +49,7 @@ def lex(src):
     toks.append(('EOF', '', line))
     return toks
 
-# ---------- Phase 2: Parser (recursive descent -> AST of tuples) ----------
+# Phase 2: Parser [recursive descent ---> AST of tuple]
 LEVELS = [['or'], ['and'], ['==', '!='], ['<', '>', '<=', '>='], ['+', '-'], ['*', '/', '%']]
 
 class Parser:
@@ -98,7 +120,7 @@ class Parser:
             e = self.expr(); self.eat(')'); return e
         raise SproutError(f"Syntax error line {l}: expected an expression, found '{v or 'end of file'}'")
 
-# ---------- Phase 3: Semantic analysis (scoped symbol table + type checks) ----------
+# Phase 3: Semantic analysis [scoped symbol table + type checks] 
 class Semantic:
     def __init__(self): self.scopes = [{}]
     def err(self, l, msg): raise SproutError(f"Semantic error line {l}: {msg}")
@@ -157,10 +179,10 @@ class Semantic:
         if ta != need or tb != need: self.err(l, f"'{op}' needs {need} operands, got {ta} and {tb}")
         return res
 
-# ---------- Phase 4: Three-address code ----------
+# Phase 4: 3 address code
 class Gen:
     def __init__(self): self.code, self.nt, self.nl = [], 0, 0
-    # '$' can never appear in a user identifier, so temporaries cannot collide with variables
+    # '$' can never appear in a user identifier  so temporaries cannot collide with variables
     def tmp(self): self.nt += 1; return f'$t{self.nt}'
     def lab(self): self.nl += 1; return f'L{self.nl}'
     def emit(self, *a): self.code.append(a)
@@ -196,7 +218,7 @@ class Gen:
             a = self.expr(n[2]); b = self.expr(n[3]); t = self.tmp(); self.emit(t, '=', a, n[1], b)
         return t
 
-# ---------- Bonus: tiny TAC interpreter so programs actually run ----------
+#  tiny TAC interpreter so programs actually run
 BIN = {'+': operator.add, '-': operator.sub, '*': operator.mul, '/': operator.floordiv,
        '%': operator.mod, '<': operator.lt, '>': operator.gt, '<=': operator.le,
        '>=': operator.ge, '==': operator.eq, '!=': operator.ne,
