@@ -1,0 +1,7 @@
+plant n: int = 5;
+plant f: int = 1;
+grow n > 1 {
+    f = f * n;
+    n = n - 1;
+}
+say f;

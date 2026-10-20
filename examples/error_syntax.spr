@@ -1,0 +1,2 @@
+plant x: int = 5
+say x;

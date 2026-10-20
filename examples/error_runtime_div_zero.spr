@@ -1,0 +1,3 @@
+plant a: int = 4;
+plant z: int = 0;
+say a / z;

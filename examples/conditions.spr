@@ -1,0 +1,4 @@
+plant x: int = 7;
+if x % 2 == 0 { say 0; } else { say 1; }
+plant ok: bool = x > 3 and not false;
+if ok { say 100; }
